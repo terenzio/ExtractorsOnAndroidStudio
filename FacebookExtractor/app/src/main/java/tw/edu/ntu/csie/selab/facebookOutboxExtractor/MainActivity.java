@@ -41,7 +41,7 @@ public class MainActivity extends FragmentActivity {
         // Add code to print out the key hash
         try {
             PackageInfo info = getPackageManager().
-                    getPackageInfo("tw.edu.ntu.csie.selab.facebookoutboxextractor",
+                    getPackageInfo("tw.edu.ntu.csie.selab.facebookOutboxExtractor",
                             PackageManager.GET_SIGNATURES);
             for (Signature signature : info.signatures) {
                 MessageDigest md = MessageDigest.getInstance("SHA");
@@ -52,6 +52,40 @@ public class MainActivity extends FragmentActivity {
         } catch (NameNotFoundException e) {
         } catch (NoSuchAlgorithmException e) {
         }
+    }
+
+    //2014.3.23 Add other method to generate the hash key
+    public static String printKeyHash(MainActivity context) {
+        PackageInfo packageInfo;
+        String key = null;
+        try {
+            //getting application package name, as defined in manifest
+            String packageName = context.getApplicationContext().getPackageName();
+
+            //Retriving package info
+            packageInfo = context.getPackageManager().getPackageInfo(packageName,
+                    PackageManager.GET_SIGNATURES);
+
+            Log.e("Package Name=", context.getApplicationContext().getPackageName());
+
+            for (Signature signature : packageInfo.signatures) {
+                MessageDigest md = MessageDigest.getInstance("SHA");
+                md.update(signature.toByteArray());
+                key = new String(Base64.encode(md.digest(), 0));
+
+                // String key = new String(Base64.encodeBytes(md.digest()));
+                Log.e("Key Hash=", key);
+            }
+        } catch (NameNotFoundException e1) {
+            Log.e("Name not found", e1.toString());
+        }
+        catch (NoSuchAlgorithmException e) {
+            Log.e("No such an algorithm", e.toString());
+        } catch (Exception e) {
+            Log.e("Exception", e.toString());
+        }
+
+        return key;
     }
 
 }
