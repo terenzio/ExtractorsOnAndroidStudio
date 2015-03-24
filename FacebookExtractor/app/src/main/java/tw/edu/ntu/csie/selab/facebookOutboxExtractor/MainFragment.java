@@ -1,5 +1,6 @@
 package tw.edu.ntu.csie.selab.facebookOutboxExtractor;
 
+import java.text.Normalizer;
 import java.util.Arrays;
 
 import org.json.JSONArray;
@@ -32,7 +33,7 @@ public class MainFragment extends Fragment {
 
     private static final String TAG = "MainFragment";
     private static String userID = null;
-    private static String fileName = "messageOutput.txt", messageData = null;
+    private static String fileName = "messageOutput3.txt", messageData = null;
     private UiLifecycleHelper uiHelper;
     private TextView messageInfoTextView;
     private Button messageRequestButton, fileRequestButton;
@@ -71,7 +72,12 @@ public class MainFragment extends Fragment {
                 dialog.setTitle("File Request");
                 if (messageData != null) {
                     if (FileUtils.isExternalStorageWritable()) {
-                        FileUtils.writeToFile(fileName, messageData);
+                        // "\\s" mean that white space
+//                       String englishOnlyString = Normalizer.normalize(messageData, Normalizer.Form.NFD).
+//                                 replaceAll("[^a-zA-Z0-9 \\s]+", "");
+                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
+                        FileUtils.writeToFile(fileName, englishOnlyString);
+//                        FileUtils.writeToFile(fileName, messageData);
                         dialog.setMessage("Write successfully!");
                     } else dialog.setMessage("Write fail!");
                 } else dialog.setMessage("Write fail!");
