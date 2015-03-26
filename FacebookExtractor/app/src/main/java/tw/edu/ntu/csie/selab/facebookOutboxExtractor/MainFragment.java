@@ -33,7 +33,7 @@ public class MainFragment extends Fragment {
 
     private static final String TAG = "MainFragment";
     private static String userID = null;
-    private static String fileName = "messageOutput3.txt", messageData = null;
+    private static String fileName = "messageOutput.txt", messageData = null;
     private UiLifecycleHelper uiHelper;
     private TextView messageInfoTextView;
     private Button messageRequestButton, fileRequestButton;
@@ -49,7 +49,6 @@ public class MainFragment extends Fragment {
         LoginButton authButton = (LoginButton) view.findViewById(R.id.authButton);
         authButton.setFragment(this);
         authButton.setReadPermissions(Arrays.asList("read_mailbox"));
-
 
         //Display message information
         messageInfoTextView = (TextView) view.findViewById(R.id.MessageInfoTextView);
@@ -73,11 +72,13 @@ public class MainFragment extends Fragment {
                 if (messageData != null) {
                     if (FileUtils.isExternalStorageWritable()) {
                         // "\\s" mean that white space
-//                       String englishOnlyString = Normalizer.normalize(messageData, Normalizer.Form.NFD).
-//                                 replaceAll("[^a-zA-Z0-9 \\s]+", "");
-                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
-                        FileUtils.writeToFile(fileName, englishOnlyString);
-//                        FileUtils.writeToFile(fileName, messageData);
+//                        String englishOnlyString = Normalizer.normalize(messageData, Normalizer.Form.NFD).
+//                                replaceAll("[^a-zA-Z0-9 \\s]+", "");
+                        //Other way
+//                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
+
+//                        FileUtils.writeToFile(fileName, englishOnlyString);
+                        FileUtils.writeToFile(fileName, messageData);
                         dialog.setMessage("Write successfully!");
                     } else dialog.setMessage("Write fail!");
                 } else dialog.setMessage("Write fail!");
@@ -93,6 +94,7 @@ public class MainFragment extends Fragment {
 
         return view;
     }
+
 
     //Passing in the callback variable
     @Override
@@ -229,8 +231,21 @@ public class MainFragment extends Fragment {
                         if (messageFromID.matches(userID)) {
 							/*Can use optString instead of getString which just returns null
 							  if value doesn't exist, instead of throwing an exception.*/
-                            if ((message.has("message") && !message.isNull("message")))
-                                messageInfo.append(message.getString("message") + "\n");
+                            if ((message.has("message") && !message.isNull("message"))){
+                                //This line handle a message include white space ()
+//                                messageInfo.append(message.getString("message") + "\n");
+
+                                //Other way to implement a message which has no white space
+                                String noSpaceMessage = message.getString("message").
+                                        replaceAll("[^a-zA-Z0-9 \\s]+", "");
+
+                                String totalMessage = "";
+                                String [] mergeString = noSpaceMessage.split("\\s");
+                                for(int spaceNumber = 0 ; spaceNumber < mergeString.length; spaceNumber++)
+                                    totalMessage += mergeString[spaceNumber] + " ";
+                                if(!totalMessage.startsWith(" ") && totalMessage.length()>0)
+                                    messageInfo.append(totalMessage + "\n");
+                            }
                         }
                     }
                 }
