@@ -54,6 +54,9 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
+    /*Carson android key hash: FMxGHmQDMjb6SN6dUUtd5OFclrc=
+             computer key hash: DYd1mVprsgL1T3lcHqcPkj1LTr4= */
+
     //2014.3.23 Add other method to generate the hash key
     public static String printKeyHash(MainActivity context) {
         PackageInfo packageInfo;
@@ -76,7 +79,7 @@ public class MainActivity extends FragmentActivity {
                 // String key = new String(Base64.encodeBytes(md.digest()));
                 Log.e("Key Hash=", key);
             }
-        } catch (NameNotFoundException e1) {
+        } catch (PackageManager.NameNotFoundException e1) {
             Log.e("Name not found", e1.toString());
         }
         catch (NoSuchAlgorithmException e) {
@@ -87,5 +90,4 @@ public class MainActivity extends FragmentActivity {
 
         return key;
     }
-
 }
