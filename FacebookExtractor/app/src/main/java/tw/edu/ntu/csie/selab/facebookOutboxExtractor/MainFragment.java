@@ -243,7 +243,7 @@ public class MainFragment extends Fragment {
                                 String [] mergeString = noSpaceMessage.split("\\s");
                                 for(int spaceNumber = 0 ; spaceNumber < mergeString.length; spaceNumber++)
                                     totalMessage += mergeString[spaceNumber] + " ";
-                                if(!totalMessage.startsWith(" ") && totalMessage.length()>0)
+                                if(totalMessage.length()>=3)
                                     messageInfo.append(totalMessage + "\n");
                             }
                         }
