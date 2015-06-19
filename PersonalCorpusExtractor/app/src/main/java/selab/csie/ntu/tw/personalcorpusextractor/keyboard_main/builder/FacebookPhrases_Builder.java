@@ -1,46 +1,112 @@
 package selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder;
 
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.util.Log;
+import android.view.View;
+
+import com.facebook.HttpMethod;
+import com.facebook.Request;
+import com.facebook.Response;
+import com.facebook.Session;
+import com.facebook.SessionState;
+import com.facebook.UiLifecycleHelper;
+import com.facebook.model.GraphObject;
+import com.facebook.model.GraphUser;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Arrays;
+import java.util.List;
+
+import selab.csie.ntu.tw.personalcorpusextractor.FileUtils;
+import selab.csie.ntu.tw.personalcorpusextractor.R;
+
 
 /**
  * Created by CarsonWang on 2015/6/17.
  */
-public class FacebookPhrases_Builder implements Phrases_Builder {
+public class FacebookPhrases_Builder extends Fragment implements Phrases_Builder {
 
-    /**
-     * Created by FragmentActivity java.
-     */
+    private static FacebookPhrases_Builder uniqueInstance;
+
+    private UiLifecycleHelper uiHelper;
+    private static final String TAG = "MainFragment";
+    private static String userID = null;
+    private static String messageData = null;
+    private static String fileName = "facebookFile";
+    private static int count = 0;
+
+    private FacebookPhrases_Builder(){
+        doFacebookAuth();
+    }
+    public static FacebookPhrases_Builder getInstance(){
+        if(uniqueInstance==null)
+            uniqueInstance = new FacebookPhrases_Builder();
+        return uniqueInstance;
+    }
+
     //Do Button to display message
-    private void doMessageRequest() {
-        //Request user data and show the results
-        Request.executeMeRequestAsync(Session.getActiveSession(), new Request.GraphUserCallback() {
+    private void doFacebookAuth() {
+        openActiveSession(this.getActivity(), true, Arrays.asList(new String[]{"email", "read_mailbox"}), new Session.StatusCallback() {
             @Override
-            public void onCompleted(GraphUser user, Response response) {
-                if (user != null) {
-                    // Fetch the parsed user ID
-                    userID = buildUserID(user);
-                    Log.i(TAG, "ID = " + userID);
+            public void call(Session session, SessionState state, Exception exception) {
+                if (exception != null) {
+                    Log.d("Facebook", exception.getMessage());
                 }
+                Log.d("Facebook", "Session State: " + session.getState());
+                // you can make request to the /me API or do other stuff like post, etc. here
+                //Request user data and show the results
+                Request.executeMeRequestAsync(Session.getActiveSession(), new Request.GraphUserCallback() {
+                    @Override
+                    public void onCompleted(GraphUser user, Response response) {
+                        if (user != null) {
+                            // Fetch the parsed user ID
+                            userID = buildUserID(user);
+                            Log.i(TAG, "ID = " + userID);
+                        }
+                    }
+                });
+
+                //Request facebook message data and show the results
+                new Request(
+                        Session.getActiveSession(),
+                        "/me/inbox",
+                        null,
+                        HttpMethod.GET,
+                        new Request.Callback() {
+                            public void onCompleted(Response response) {
+                                GraphObject graphObject = response.getGraphObject();
+                                getMessage(graphObject);
+//                                getResult();
+                            }
+                        }
+                ).executeAsync();
             }
         });
-
-        //Request facebook message data and show the results
-        new Request(
-                Session.getActiveSession(),
-                "/me/inbox",
-                null,
-                HttpMethod.GET,
-                new Request.Callback() {
-                    public void onCompleted(Response response) {
-                        GraphObject graphObject = response.getGraphObject();
-                        messageInfoTextView.setText(buildMessageInfoDisplay(graphObject));
-                    }
-                }
-        ).executeAsync();
     }
 
 
+    private static Session openActiveSession(Activity activity, boolean allowLoginUI, List permissions, Session.StatusCallback callback) {
+        Session.OpenRequest openRequest = new Session.OpenRequest(activity).setPermissions(permissions).setCallback(callback);
+        Session session = new Session.Builder(activity).build();
+        if (SessionState.CREATED_TOKEN_LOADED.equals(session.getState()) || allowLoginUI) {
+            Session.setActiveSession(session);
+            session.openForRead(openRequest);
+            return session;
+        }
+        return null;
+    }
+
     //Show information in Display
-    private String buildMessageInfoDisplay(GraphObject data) {
+    private String getMessage(GraphObject data) {
         StringBuilder messageInfo = new StringBuilder("");
         if (data != null) {
             JSONObject jsonObject = data.getInnerJSONObject();
@@ -102,43 +168,99 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
         return userInfo.toString();
     }
 
-
     /**
-     * Created by FileUtils java.
+     * creates the Facebook session and opens it automatically
+     * if a cached token is available
      */
 
-    //Checks if external storage is available for read and write
-    public static boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
+    //Passing in the callback variable
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        uiHelper = new UiLifecycleHelper(this.getActivity(), callback);
+        uiHelper.onCreate(savedInstanceState);
     }
 
-    //Write file to external storage
-    public static void writeToFile(String fileName, String data){
-        //Create the directory for the user's public pictures directory
-        String path = Environment.getExternalStorageDirectory().getPath();
-//	    File dir = new File(path + "/facebookOutboxextractor");
-        File dir = new File(path + "/");
-        if (!dir.exists()){
-            dir.mkdir();
+    //Respond to session state changes (handle login and logout)
+    private void onSessionStateChange(Session session, SessionState state, Exception exception) {
+        if (state.isOpened()) {
+            Log.i(TAG, "Logged in...");
+        } else if (state.isClosed()) {
+            Log.i(TAG, "Logged out...");
         }
-        try {
-//	    	File file = new File(path + "/facebookOutboxextractor/" + fileName);
-            File file = new File(path + "/" + fileName);
-            FileOutputStream fout = new FileOutputStream(file);
-            fout.write(data.getBytes());
-            fout.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+    }
+
+    //add logic to listen for the changes
+    private Session.StatusCallback callback = new Session.StatusCallback() {
+        @Override
+        public void call(Session session, SessionState state, Exception exception) {
+            onSessionStateChange(session, state, exception);
         }
+    };
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Session session = Session.getActiveSession();
+        if (session != null &&
+                (session.isOpened() || session.isClosed())) {
+            onSessionStateChange(session, session.getState(), null);
+        }
+
+        uiHelper.onResume();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        uiHelper.onActivityResult(requestCode, resultCode, data);
+        Session.getActiveSession().onActivityResult(this.getActivity(), requestCode, resultCode, data);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        uiHelper.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        uiHelper.onDestroy();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        uiHelper.onSaveInstanceState(outState);
     }
 
     public Phrases_Product getResult(){
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this.getActivity());
+        dialog.setTitle("File Request");
+        if (messageData != null) {
+            if (FileUtils.isExternalStorageWritable()) {
+                // "\\s" mean that white space
+//                        String englishOnlyString = Normalizer.normalize(messageData, Normalizer.Form.NFD).
+//                                replaceAll("[^a-zA-Z0-9 \\s]+", "");
+                //Other way
+//                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
+
+//                        FileUtils.writeToFile(fileName, englishOnlyString);
+                FileUtils.writeToFile(fileName+String.valueOf(count), messageData);
+                count++;
+                dialog.setMessage("Write successfully!");
+            } else dialog.setMessage("Write fail!");
+        } else dialog.setMessage("Write fail!");
+        dialog.setPositiveButton(R.string.ok_label,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(
+                            DialogInterface dialoginterface, int i) {
+                    }
+                });
+        dialog.show();
         return null;
     }
+
+
 }

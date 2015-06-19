@@ -22,4 +22,4 @@
     android:layout_height="50dip"
     android:layout_gravity="center_vertical"
     android:src="@drawable/com_facebook_profile_default_icon" />
-<!-- From: file:/C:/Users/CarsonWang/ExtractorsOnAndroidStudio/FacebookExtractor/facebookSDK/res/layout/com_facebook_picker_image.xml -->
+<!-- From: file:/C:/Users/Carson/ExtractorsOnAndroidStudio/FacebookExtractor/facebookSDK/res/layout/com_facebook_picker_image.xml -->
