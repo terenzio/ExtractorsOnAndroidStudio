@@ -1,6 +1,8 @@
 package selab.csie.ntu.tw.personalcorpusextractor;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
@@ -15,27 +17,35 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 
-import com.facebook.UiLifecycleHelper;
-import com.facebook.android.Facebook;
+
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.FacebookSdk;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.FacebookPhrases_Builder;
 
 
-public class ExtractorSelector extends FragmentActivity {
+public class ExtractorSelector extends Activity{
 
     private CheckBox facebookCheckBox,emailCheckBox,SMSCheckBox;
-
+    private CallbackManager callbackManager;
 
     //loads the layout in the main activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        FacebookSdk.sdkInitialize(getApplicationContext());
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_extractor_selector);
+        callbackManager = CallbackManager.Factory.create();
         printHashKey();
-
         //Check with single selection
         facebookCheckBox = (CheckBox) findViewById(R.id.facebook);
         facebookCheckBox.setOnCheckedChangeListener(listener);
@@ -52,7 +62,7 @@ public class ExtractorSelector extends FragmentActivity {
             @Override
             public void onClick(View v){
                 if(facebookCheckBox.isChecked()){
-                    FacebookPhrases_Builder.getInstance();
+                    authFacebook();
                 }
                 else if(emailCheckBox.isChecked()){
                 }
@@ -87,6 +97,34 @@ public class ExtractorSelector extends FragmentActivity {
         }
     };
 
+    private void authFacebook(){
+        LoginManager.getInstance().logInWithReadPermissions(ExtractorSelector.this, Arrays.asList("public_profile", "read_mailbox"));
+        LoginManager.getInstance().registerCallback(callbackManager,
+                new FacebookCallback<LoginResult>() {
+                    @Override
+                    public void onSuccess(LoginResult loginResult) {
+                        Log.d("FacebookTest","Success");
+                        FacebookPhrases_Builder.getInstance(loginResult);
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Log.d("FacebookTest","Cancel");
+                    }
+
+                    @Override
+                    public void onError(FacebookException e) {
+                        Log.d("FacebookTest","Error");
+                    }
+                });
+    }
+
+    @Override
+    protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        callbackManager.onActivityResult(requestCode, resultCode, data);
+    }
+
     //Generates the hash key used for Facebook console to register app.
     public void printHashKey(){
         // Add code to print out the key hash
@@ -104,6 +142,7 @@ public class ExtractorSelector extends FragmentActivity {
         } catch (NoSuchAlgorithmException e) {
         }
     }
+
 
 //    @Override
 //    public boolean onCreateOptionsMenu(Menu menu) {
