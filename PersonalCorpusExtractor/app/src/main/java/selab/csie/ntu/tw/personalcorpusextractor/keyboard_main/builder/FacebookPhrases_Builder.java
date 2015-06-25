@@ -49,7 +49,7 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 
     private static FacebookPhrases_Builder facebookPhrases_Builder;
 
-    private LoginResult getLoginResult;
+    private static LoginResult getLoginResult;
 
     private static String myID = null;
     private static String messageData = null;
@@ -58,16 +58,36 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
     private static int count = 0;
 
 
-    public static FacebookPhrases_Builder getInstance(LoginResult loginResult){
+    public static FacebookPhrases_Builder getInstance(){
         if(facebookPhrases_Builder == null)
-            facebookPhrases_Builder = new FacebookPhrases_Builder(loginResult);
+            facebookPhrases_Builder = new FacebookPhrases_Builder();
         return facebookPhrases_Builder;
     }
-    private FacebookPhrases_Builder(LoginResult loginResult){
-        this.getLoginResult = loginResult;
-        getMyID();
-        getMessages();
-//        getResult();
+    private FacebookPhrases_Builder(){
+        authFacebook();
+    }
+    private void authFacebook(){
+        LoginManager.getInstance().logInWithReadPermissions(ExtractorSelector.getInstance(), Arrays.asList("public_profile", "read_mailbox"));
+        LoginManager.getInstance().registerCallback(ExtractorSelector.callbackManager,
+                new FacebookCallback<LoginResult>() {
+                    @Override
+                    public void onSuccess(LoginResult loginResult) {
+                        getLoginResult = loginResult;
+                        getMyID();
+                        getMessages();
+                        Log.d("FacebookTest","Success");
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Log.d("FacebookTest","Cancel");
+                    }
+
+                    @Override
+                    public void onError(FacebookException e) {
+                        Log.d("FacebookTest","Error");
+                    }
+                });
     }
 
 
@@ -129,11 +149,11 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                     //Level 3 JSON loop
                     JSONArray messageArray = messageObject.getJSONArray("data");
                     //Comments paging
-//                    if(!messageObject.getString("paging").isEmpty()){
-//                        JSONObject nextPaging = messageObject.getJSONObject("paging");
-////                        handlePaging(response);
-//                        Log.d("FacebookTest","Comments link = "+nextPaging.toString());
-//                    }
+                    if(!messageObject.getString("paging").isEmpty()){
+                        JSONObject nextPaging = messageObject.getJSONObject("paging");
+                        handlePaging(response);
+                        Log.d("FacebookTest","Comments link = "+nextPaging.toString());
+                    }
 
                     for (int messageSize = messageArray.length()-1 ; messageSize >= 0; messageSize--) {
 
