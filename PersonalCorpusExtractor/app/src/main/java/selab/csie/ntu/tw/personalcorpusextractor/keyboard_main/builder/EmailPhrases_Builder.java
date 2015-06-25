@@ -39,9 +39,8 @@ public class EmailPhrases_Builder implements Phrases_Builder {
         new RecMail().execute(this);
     }
 
-    public static EmailPhrases_Builder getInstance(){
-        if(emailPhrases_Builder == null)
-            emailPhrases_Builder = new EmailPhrases_Builder();
+    public static EmailPhrases_Builder getMultiInstance(){
+        emailPhrases_Builder = new EmailPhrases_Builder();
         return emailPhrases_Builder;
     }
 

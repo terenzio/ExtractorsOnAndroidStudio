@@ -1,42 +1,30 @@
 package selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
+import android.os.Environment;
 import android.util.Log;
-import android.view.View;
 
-import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
-import com.facebook.FacebookSdk;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.HttpMethod;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
-//import com.facebook.Request;
-//import com.facebook.Response;
-//import com.facebook.Session;
-//import com.facebook.SessionState;
-//import com.facebook.UiLifecycleHelper;
-//import com.facebook.model.GraphObject;
-//import com.facebook.model.GraphUser;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import selab.csie.ntu.tw.personalcorpusextractor.ExtractorSelector;
-import selab.csie.ntu.tw.personalcorpusextractor.FileUtils;
 import selab.csie.ntu.tw.personalcorpusextractor.R;
 
 
@@ -46,18 +34,18 @@ import selab.csie.ntu.tw.personalcorpusextractor.R;
 public class FacebookPhrases_Builder implements Phrases_Builder {
     private static FacebookPhrases_Builder facebookPhrases_Builder;
 
-    private static LoginResult getLoginResult;
+    private final String TAG = "FacebookTest";
+    private final String fileName = "BagOfWordFacebook";
 
+    private static LoginResult getLoginResult = null;
     private static String myID = null;
     private static String messageData = null;
+    private ArrayList<String> allMessage = new ArrayList<>();
 
-    private static String fileName = "facebookFile";
     private static int count = 0;
 
-
-    public static FacebookPhrases_Builder getInstance(){
-        if(facebookPhrases_Builder == null)
-            facebookPhrases_Builder = new FacebookPhrases_Builder();
+    public static FacebookPhrases_Builder getMultiInstance(){
+        facebookPhrases_Builder = new FacebookPhrases_Builder();
         return facebookPhrases_Builder;
     }
     private FacebookPhrases_Builder(){
@@ -70,23 +58,23 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                     @Override
                     public void onSuccess(LoginResult loginResult) {
                         getLoginResult = loginResult;
+                        Log.d(TAG,"Success");
+                        messageData = null;
                         getMyID();
                         getMessages();
-                        Log.d("FacebookTest","Success");
                     }
 
                     @Override
                     public void onCancel() {
-                        Log.d("FacebookTest","Cancel");
+                        Log.d(TAG,"Cancel");
                     }
 
                     @Override
                     public void onError(FacebookException e) {
-                        Log.d("FacebookTest","Error");
+                        Log.d(TAG,"Error");
                     }
                 });
     }
-
 
     private void getMyID(){
         GraphRequest request = GraphRequest.newMeRequest(
@@ -98,7 +86,7 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                         JSONObject jsonObject = response.getJSONObject();
                         try {
                             myID = jsonObject.getString("id");
-                            Log.d("FacebookTest",myID);
+                            Log.d(TAG,myID);
                         }catch (JSONException e){
                             e.printStackTrace();
                         }
@@ -125,118 +113,153 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
         request.executeAsync();
     }
 
+    //Catch all dialog with 25 message at the moment if catch all, must be add coments paging
     private void handleMessage(GraphResponse response) {
         JSONObject data = response.getJSONObject();
         StringBuffer messageAll = new StringBuffer();
-        if (data != null) {
-            try {
+        try {
+            if (data!=null){
                 //Level 1 JSON loop
+                Log.v(TAG,data.toString());
                 JSONArray dataArray = data.getJSONArray("data");
-                //data paging
-                if(!data.getString("paging").isEmpty()){
-                    JSONObject nextPaging = data.getJSONObject("paging");
-//                    handlePaging(response);
-                    Log.d("FacebookTest","Data link = "+nextPaging.toString());
-                }
                 for (int dataSize = 0; dataSize < dataArray.length(); dataSize++) {
                     JSONObject dataObject = dataArray.getJSONObject(dataSize);
 
-                    //Level 2 JSON loop
-                    JSONObject messageObject = dataObject.getJSONObject("comments");
-                    //Level 3 JSON loop
-                    JSONArray messageArray = messageObject.getJSONArray("data");
-                    //Comments paging
-                    if(!messageObject.getString("paging").isEmpty()){
-                        JSONObject nextPaging = messageObject.getJSONObject("paging");
-                        handlePaging(response);
-                        Log.d("FacebookTest","Comments link = "+nextPaging.toString());
-                    }
+                    if (!dataObject.isNull("comments")) {
+                        //Level 2 JSON loop
+                        JSONObject messageObject = dataObject.getJSONObject("comments");
+                        if (!messageObject.isNull("data")) {
+                            //Level 3 JSON loop
+                            JSONArray messageArray = messageObject.getJSONArray("data");
+                            //Comments paging  if(!messageObject.getString("paging").isEmpty())
+                            for (int messageSize = messageArray.length() - 1; messageSize >= 0; messageSize--) {
+                                //All message including sendind and receiving can be fetched
+//                                JSONObject message = messageArray.getJSONObject(messageSize);
+//                                messageAll.append(message.getString("message")+"\n");
 
-                    for (int messageSize = messageArray.length()-1 ; messageSize >= 0; messageSize--) {
+                                //Level 4 JSON loop fetch the message of sending
+                                JSONObject message = messageArray.getJSONObject(messageSize);
+                                if (!message.isNull("from")) {
+                                    JSONObject messageFromObject = message.getJSONObject("from");
 
-//                        //All message including sendind and receiving can be fetched
-//						JSONObject message = messageArray.getJSONObject(messageSize);
-//                        messageAll.append(message.getString("message")+"\n");
+                                    if (!messageFromObject.isNull("id")) {
+                                        String messageFromID = messageFromObject.getString("id");
+                                        if (messageFromID.matches(myID)) {
+                                            /*Can use optString instead of getString which just returns null
+                                              if value doesn't exist, instead of throwing an exception.*/
+                                            if ((message.has("message") && !message.isNull("message"))) {
+//                                                //This line handle a message include white space ()
+//                                                messageAll.append(message.getString("message") + "\n");
 
-                        //Level 4 JSON loop fetch the message of sending
-                        JSONObject message = messageArray.getJSONObject(messageSize);
-                        JSONObject messageFromObject = message.getJSONObject("from");
-                        String messageFromID = messageFromObject.getString("id");
-                        if (messageFromID.matches(myID)) {
-							/*Can use optString instead of getString which just returns null
-							  if value doesn't exist, instead of throwing an exception.*/
-                            if ((message.has("message") && !message.isNull("message"))){
-                                //This line handle a message include white space ()
-                                messageAll.append(message.getString("message") + "\n");
+                                                //Other way to implement a message which has no white space
+                                                String noSpaceMessage = message.getString("message").
+                                                        replaceAll("[^a-zA-Z0-9 \\s]+", "");
 
-//                                //Other way to implement a message which has no white space
-//                                String noSpaceMessage = message.getString("message").
-//                                        replaceAll("[^a-zA-Z0-9 \\s]+", "");
-//
-//                                String totalMessage = "";
-//                                String [] mergeString = noSpaceMessage.split("\\s");
-//                                for(int spaceNumber = 0 ; spaceNumber < mergeString.length; spaceNumber++)
-//                                    totalMessage += mergeString[spaceNumber] + " ";
-//                                if(totalMessage.length()>=3)
-//                                    messageInfo.append(totalMessage + "\n");
+                                                String totalMessage = "";
+                                                String[] mergeString = noSpaceMessage.split("\\s");
+                                                for (int spaceNumber = 0; spaceNumber < mergeString.length; spaceNumber++)
+                                                    totalMessage += mergeString[spaceNumber] + " ";
+                                                if (totalMessage.length() >= 3)
+                                                    messageAll.append(totalMessage + "\n");
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-//                    if(!messageObject.getString("paging").isEmpty()){
-//                        JSONObject nextPaging = messageObject.getJSONObject("paging");
-//                        Log.d("FacebookNextLink","Link="+nextPaging.toString());
-//                    }
+                }//end for data array
+                allMessage.add(messageAll.toString());
+                //data paging
+                if(data.has("paging")){
+                    JSONObject nextPaging = data.getJSONObject("paging");
+                    handlePaging(response);
+                    Log.d(TAG,"Data link = "+nextPaging.toString());
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            messageData = messageAll.toString();
+                else{
+                    for(String message : allMessage)
+                        messageData += message;
+                    getResult();
+                }
+            }//end data
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
     private void handlePaging(GraphResponse response){
         GraphRequest paging = response.getRequestForPagedResults(GraphResponse.PagingDirection.NEXT);
-        if(paging!=null){
-            paging.setGraphPath(response.getRequest().getGraphPath());
-            paging.setCallback(
-                    new GraphRequest.Callback() {
-                        @Override
-                        public void onCompleted(GraphResponse response) {
-                            handleMessage(response);
-                        }
+        paging.setGraphPath(response.getRequest().getGraphPath());
+        paging.setCallback(
+                new GraphRequest.Callback() {
+                    @Override
+                    public void onCompleted(GraphResponse response) {
+                        handleMessage(response);
                     }
-            );
-            GraphRequest.executeBatchAsync(paging);
-        }
+                }
+        );
+        GraphRequest.executeBatchAsync(paging);
     }
 
+    public Phrases_Product getResult(){
+        AlertDialog.Builder dialog = new AlertDialog.Builder(ExtractorSelector.getInstance());
+        dialog.setTitle("File Request");
+        if (messageData!=null) {
+            if (isExternalStorageWritable()) {
+                // "\\s" mean that white space
+//                        String englishOnlyString = Normalizer.normalize(messageData, Normalizer.Form.NFD).
+//                                replaceAll("[^a-zA-Z0-9 \\s]+", "");
+                //Other way
+//                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
+
+//                        FileUtils.writeToFile(fileName, englishOnlyString);
+                writeToFile(fileName+String.valueOf(count)+".txt", messageData);
+                count++;
+                dialog.setMessage("Write successfully!");
+            } else dialog.setMessage("Write fail!");
+        } else  dialog.setMessage("Write fail!");
+        dialog.setPositiveButton(R.string.ok_label,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(
+                            DialogInterface dialoginterface, int i) {
+                    }
+                });
+        dialog.show();
+        return null;
+    }
 
 //    public Phrases_Product getResult(){
-//        dialog.setTitle("File Request");
-//        if (messageData != null) {
-//            if (FileUtils.isExternalStorageWritable()) {
-//                // "\\s" mean that white space
-////                        String englishOnlyString = Normalizer.normalize(messageData, Normalizer.Form.NFD).
-////                                replaceAll("[^a-zA-Z0-9 \\s]+", "");
-//                //Other way
-////                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
-//
-////                        FileUtils.writeToFile(fileName, englishOnlyString);
-//                FileUtils.writeToFile(fileName+String.valueOf(count), messageData);
-//                count++;
-//                dialog.setMessage("Write successfully!");
-//            } else dialog.setMessage("Write fail!");
-//        } else dialog.setMessage("Write fail!");
-//        dialog.setPositiveButton(R.string.ok_label,
-//                new DialogInterface.OnClickListener() {
-//                    public void onClick(
-//                            DialogInterface dialoginterface, int i) {
-//                    }
-//                });
-//        dialog.show();
 //        return null;
 //    }
-    public Phrases_Product getResult(){
-        return null;
+
+    //Checks if external storage is available for read and write
+    private boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+
+    //Write file to external storage
+    private void writeToFile(String fileName, String data){
+        //Create the directory for the user's public pictures directory
+        String path = Environment.getExternalStorageDirectory().getPath();
+//	    File dir = new File(path + "/facebookOutboxextractor");
+        File dir = new File(path + "/");
+        if (!dir.exists()){
+            dir.mkdir();
+        }
+        try {
+//	    	File file = new File(path + "/facebookOutboxextractor/" + fileName);
+            File file = new File(path + "/" + fileName);
+            FileOutputStream fout = new FileOutputStream(file);
+            fout.write(data.getBytes());
+            fout.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

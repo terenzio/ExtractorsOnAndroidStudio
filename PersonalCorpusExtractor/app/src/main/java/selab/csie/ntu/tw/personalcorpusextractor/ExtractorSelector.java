@@ -71,13 +71,13 @@ public class ExtractorSelector extends Activity{
             @Override
             public void onClick(View v){
                 if(facebookCheckBox.isChecked()){
-                    FacebookPhrases_Builder.getInstance();
+                    FacebookPhrases_Builder.getMultiInstance();
                 }
                 else if(emailCheckBox.isChecked()){
-                    EmailPhrases_Builder.getInstance();
+                    EmailPhrases_Builder.getMultiInstance();
                 }
                 else if(SMSCheckBox.isChecked()){
-                    SMSPhrases_Builder.getInstance();
+                    SMSPhrases_Builder.getMultiInstance();
                 }
             }
         });
