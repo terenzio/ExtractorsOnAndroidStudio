@@ -29,7 +29,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.EmailPhrases_Builder;
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.FacebookPhrases_Builder;
+import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.SMSPhrases_Builder;
 
 
 public class ExtractorSelector extends Activity{
@@ -72,8 +74,10 @@ public class ExtractorSelector extends Activity{
                     FacebookPhrases_Builder.getInstance();
                 }
                 else if(emailCheckBox.isChecked()){
+                    EmailPhrases_Builder.getInstance();
                 }
                 else if(SMSCheckBox.isChecked()){
+                    SMSPhrases_Builder.getInstance();
                 }
             }
         });

@@ -44,9 +44,6 @@ import selab.csie.ntu.tw.personalcorpusextractor.R;
  * Created by CarsonWang on 2015/6/17.
  */
 public class FacebookPhrases_Builder implements Phrases_Builder {
-
-    private static final String TAG = "FacebookPhrases_Builder";
-
     private static FacebookPhrases_Builder facebookPhrases_Builder;
 
     private static LoginResult getLoginResult;
