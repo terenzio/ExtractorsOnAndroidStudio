@@ -1,0 +1,12 @@
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries
+.DS_Store
+/build
+*.db
+*.class
+Personal_Keyboard_SQLite/libs/OntologyV8.jar
+Personal_Keyboard_SQLite/libs/OntologyV7.jar
+Personal_Keyboard_SQLite/libs/OntologyV6.jar
+Personal_Keyboard_SQLite/.idea/libraries/OntologyV7.xml
