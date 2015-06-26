@@ -171,16 +171,19 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                 }//end for data array
                 allMessage.add(messageAll.toString());
                 //data paging
-                if(data.has("paging")){
-                    JSONObject nextPaging = data.getJSONObject("paging");
-                    handlePaging(response);
-                    Log.d(TAG,"Data link = "+nextPaging.toString());
-                }
-                else{
-                    for(String message : allMessage)
-                        messageData += message;
-                    getResult();
-                }
+                for(String message : allMessage)
+                    messageData += message;
+                getResult();
+//                if(data.has("paging")){
+//                    JSONObject nextPaging = data.getJSONObject("paging");
+//                    handlePaging(response);
+//                    Log.d(TAG,"Data link = "+nextPaging.toString());
+//                }
+//                else{
+//                    for(String message : allMessage)
+//                        messageData += message;
+//                    getResult();
+//                }
             }//end data
         } catch (JSONException e) {
             e.printStackTrace();
