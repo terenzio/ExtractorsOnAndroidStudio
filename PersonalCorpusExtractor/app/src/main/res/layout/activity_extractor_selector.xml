@@ -41,7 +41,7 @@
     </LinearLayout>
 
 
-    <!--Begin Ontology Update Section  -->
+
 
     <Button
         android:layout_width="wrap_content"
@@ -51,6 +51,19 @@
         android:layout_marginLeft="30dp"
         android:singleLine="true"
         android:layout_gravity="right" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Read Writing Sample"
+        android:onClick="readFile"
+        android:id="@+id/buttonRead"
+        android:layout_marginLeft="30dp"
+        android:singleLine="true"
+        android:layout_gravity="right" />
+
+
+    <!--Begin Ontology Update Section  -->
 
     <ScrollView
         android:layout_width="match_parent"
@@ -106,6 +119,13 @@
                 android:text="Update ontology"
                 android:onClick="updateOntology"
                 android:layout_gravity="right" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:text="OutPut File:"
+                android:id="@+id/outPutCorpus" />
 
         </LinearLayout>
 

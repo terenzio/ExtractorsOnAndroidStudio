@@ -9,6 +9,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -32,8 +33,10 @@ import com.facebook.FacebookSdk;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
@@ -50,6 +53,7 @@ import java.util.TreeMap;
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.EmailPhrases_Builder;
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.FacebookPhrases_Builder;
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.SMSPhrases_Builder;
+import selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.visitor.TreeVisitor;
 import tw.edu.ntu.selab.query_refinement_system.AssetManager;
 import tw.edu.ntu.selab.query_refinement_system.PersonalOntologyBuilder;
 import tw.edu.ntu.selab.query_refinement_system.QueryRefiner;
@@ -263,6 +267,46 @@ public class ExtractorSelector extends Activity{
         };
         t.execute();
     }
+    public void readFile(View view) {
+        Toast toast1 = Toast.makeText(getApplicationContext(), "Reading File...", Toast.LENGTH_SHORT);
+        toast1.show();
+
+        String path = Environment.getExternalStorageDirectory().getPath();
+        File file = new File(path,FacebookPhrases_Builder.getFileName());
+
+        //Read text from file
+        StringBuilder text = new StringBuilder();
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                text.append(line);
+                text.append('\n');
+            }
+            br.close();
+        }
+        catch (IOException e) {
+            //You'll need to add proper error handling here
+        }
+
+        //Find the view by its id
+        TextView tv = (TextView)findViewById(R.id.outPutCorpus);
+
+        //Set the text
+        tv.setText(text);
+
+        TreeVisitor concreteTreeVisitor = new TreeVisitor();
+        try {
+            concreteTreeVisitor.visitTree(file);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+    }
+
 
     private void initialize() throws Exception {
         AsyncTask<Void, Void, Void> t = new AsyncTask<Void, Void, Void>() {

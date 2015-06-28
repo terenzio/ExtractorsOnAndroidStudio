@@ -1,4 +1,4 @@
-package selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.test;
+package selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.builders;
 
 import java.util.HashSet;
 import java.util.Map;

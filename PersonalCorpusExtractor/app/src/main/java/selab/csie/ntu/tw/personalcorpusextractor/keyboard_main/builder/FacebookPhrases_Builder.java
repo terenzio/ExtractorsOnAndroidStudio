@@ -36,6 +36,7 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 
     private final String TAG = "FacebookTest";
     private final String fileName = "BagOfWordFacebook";
+    private static String finalFileName = "";
 
     private static LoginResult getLoginResult = null;
     private static String myID = null;
@@ -43,6 +44,10 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
     private ArrayList<String> allMessage = new ArrayList<>();
 
     private static int count = 0;
+
+    public static String getFileName() {
+        return finalFileName;
+    }
 
     public static FacebookPhrases_Builder getMultiInstance(){
         facebookPhrases_Builder = new FacebookPhrases_Builder();
@@ -216,7 +221,9 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 //                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
 
 //                        FileUtils.writeToFile(fileName, englishOnlyString);
+                finalFileName = fileName+String.valueOf(count)+".txt";
                 writeToFile(fileName+String.valueOf(count)+".txt", messageData);
+
                 count++;
                 dialog.setMessage("Write successfully!");
             } else dialog.setMessage("Write fail!");

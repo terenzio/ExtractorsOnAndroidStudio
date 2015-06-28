@@ -1,5 +1,7 @@
 package selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.builders;
 
+import android.os.Environment;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -15,10 +17,13 @@ public class FrequencyAggregator {
 		DocumentBuilder docBuilder = new DocumentBuilder();
 		
 		System.out.print("STEP1: Reading Input Corpus.... ");
-		System.out.println("Done!"); 
-		
+		System.out.println("Done!");
+
+		String path = Environment.getExternalStorageDirectory().getPath();
+		File fileoutCollocations = new File(path + "/" + "complex2gram.txt");
+
 		PrintWriter outFrequency;
-		outFrequency = new PrintWriter(new FileWriter("complex2gram.txt"));
+		outFrequency = new PrintWriter(fileoutCollocations);
 		try{
 			BufferedReader br = new BufferedReader(new FileReader(inCorpus));
 			String line;

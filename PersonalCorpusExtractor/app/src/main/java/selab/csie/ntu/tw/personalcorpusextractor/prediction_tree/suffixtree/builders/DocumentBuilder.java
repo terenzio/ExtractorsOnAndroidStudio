@@ -1,7 +1,5 @@
 package selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.builders;
 
-
-import selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.test.SignificanceBuilder;
 import  selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.tree.*;
 
 import java.io.BufferedReader;
