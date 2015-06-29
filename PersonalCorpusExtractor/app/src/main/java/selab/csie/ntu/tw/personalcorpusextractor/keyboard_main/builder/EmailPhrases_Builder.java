@@ -13,8 +13,6 @@ import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
