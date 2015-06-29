@@ -71,10 +71,15 @@ public class ExtractorSelector extends Activity{
             @Override
             public void onClick(View v){
                 if(facebookCheckBox.isChecked()){
+//                    processingDialog = new AlertDialog.Builder(ExtractorSelector.this);
+//                    processingDialog.setTitle("Waiting");
+//                    processingDialog.setMessage("Please wait for a moment");
+//                    processingDialog.show();
                     FacebookPhrases_Builder.getMultiInstance();
                 }
                 else if(emailCheckBox.isChecked()){
-                    EmailPhrases_Builder.getMultiInstance();
+                    new EmailPhrases_Builder().execute(this);
+//                    EmailPhrases_Builder.getMultiInstance();
                 }
                 else if(SMSCheckBox.isChecked()){
                     SMSPhrases_Builder.getMultiInstance();

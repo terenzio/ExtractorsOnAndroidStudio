@@ -13,15 +13,22 @@ import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
 
+import selab.csie.ntu.tw.personalcorpusextractor.ExtractorSelector;
+import selab.csie.ntu.tw.personalcorpusextractor.R;
+
 /**
  * Created by CarsonWang on 2015/6/17.
  */
-public class EmailPhrases_Builder implements Phrases_Builder {
-    private static EmailPhrases_Builder emailPhrases_Builder;
+public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> implements Phrases_Builder {
+//    private static EmailPhrases_Builder emailPhrases_Builder;
+
+    private final String fileName = "BagOfWordEmail";
 
     private String address="redmine.selab.centos@gmail.com";
     private String password="Selab305!";
@@ -35,62 +42,86 @@ public class EmailPhrases_Builder implements Phrases_Builder {
     private boolean testing;
     private boolean isUrl ;
 
-    private EmailPhrases_Builder(){
-        new RecMail().execute(this);
-    }
+    private Session session;
+    private Store store;
 
-    public static EmailPhrases_Builder getMultiInstance(){
-        emailPhrases_Builder = new EmailPhrases_Builder();
-        return emailPhrases_Builder;
-    }
+    protected Object doInBackground(Object... args) {
+        try {
+            Properties props = new Properties();
+            props.put("mail.imap.ssl.enable", "true"); // required for Gmail
+            props.put("mail.imap.sasl.enable", "true");
+            props.put("mail.imap.sasl.mechanisms", "XOAUTH2");
+            props.put("mail.imap.auth.login.disable", "true");
+            props.put("mail.imap.auth.plain.disable", "true");
+            session = Session.getInstance(props);
+            //session.setDebug(true);
+            store = session.getStore("imaps");
 
-    private class RecMail extends AsyncTask<Object, Object, Object>{
-        protected Object doInBackground(Object... args) {
-            try {
-                Properties props = new Properties();
-                props.put("mail.imap.ssl.enable", "true"); // required for Gmail
-                props.put("mail.imap.sasl.enable", "true");
-                props.put("mail.imap.sasl.mechanisms", "XOAUTH2");
-                props.put("mail.imap.auth.login.disable", "true");
-                props.put("mail.imap.auth.plain.disable", "true");
-                Session session = Session.getInstance(props);
-                //session.setDebug(true);
-                Store store = session.getStore("imaps");
-                Log.v("sdCard",Environment.getExternalStorageDirectory().getPath());
-                String path = Environment.getExternalStorageDirectory().getPath();
-                File dir = new File(path + "/Email/");
-                if (!dir.exists()){
-                    dir.mkdir();
-                }
-
-                dir.mkdir();
-                store.connect("imap.gmail.com", address, password);
-                Folder sentBox = store.getFolder("[Gmail]/Sent Mail");
-                sentBox.open(Folder.READ_ONLY);
-                Log.v("sentBox Num",""+sentBox.getMessageCount());
-                int i;
-                for (i = 1 ; i <=sentBox.getMessageCount() ; i++ ){
-                    File file = new File(dir, i+".txt");
-                    Message msg = sentBox.getMessage(i);
-                    Writer out = new OutputStreamWriter(new FileOutputStream(file));
-
-                    Multipart mp = (Multipart) msg.getContent();
-                    BodyPart bp = mp.getBodyPart(0);
-                    Log.v("Origin",bp.getContent().toString());
-//                    String outputString = new StringCutter().cut(bp.getContent().toString());
-                    String outputString = cut(bp.getContent().toString());
-                    Log.v("Content",outputString);
-
-                    out.write(outputString);
-
-                    out.close();
-                }
-            } catch (Exception mex) {
-                mex.printStackTrace();
-            }
-            return null;
+            getResult();
+        } catch (Exception mex) {
+            mex.printStackTrace();
         }
+        return null;
     }
+
+
+//    private EmailPhrases_Builder(){
+//        new RecMail().execute(this);
+//    }
+//
+//    public static EmailPhrases_Builder getMultiInstance(){
+//        emailPhrases_Builder = new EmailPhrases_Builder();
+//        return emailPhrases_Builder;
+//    }
+//
+//    private class RecMail extends AsyncTask<Object, Object, Object>{
+//        protected Object doInBackground(Object... args) {
+//            try {
+//                Properties props = new Properties();
+//                props.put("mail.imap.ssl.enable", "true"); // required for Gmail
+//                props.put("mail.imap.sasl.enable", "true");
+//                props.put("mail.imap.sasl.mechanisms", "XOAUTH2");
+//                props.put("mail.imap.auth.login.disable", "true");
+//                props.put("mail.imap.auth.plain.disable", "true");
+//                Session session = Session.getInstance(props);
+//                //session.setDebug(true);
+//                Store store = session.getStore("imaps");
+//                Log.v("sdCard",Environment.getExternalStorageDirectory().getPath());
+//                String path = Environment.getExternalStorageDirectory().getPath();
+//                File dir = new File(path + "/EmailExtractor/");
+//                if (!dir.exists()){
+//                    dir.mkdir();
+//                }
+//
+//                dir.mkdir();
+//                store.connect("imap.gmail.com", address, password);
+//                Folder sentBox = store.getFolder("[Gmail]/Sent Mail");
+//                sentBox.open(Folder.READ_ONLY);
+//                Log.v("sentBox Num",""+sentBox.getMessageCount());
+//                int i;
+//                for (i = 1 ; i <=sentBox.getMessageCount() ; i++ ){
+//                    File file = new File(dir,fileName+i+".txt");
+//                    Message msg = sentBox.getMessage(i);
+//                    Writer out = new OutputStreamWriter(new FileOutputStream(file));
+//
+//                    Multipart mp = (Multipart) msg.getContent();
+//                    BodyPart bp = mp.getBodyPart(0);
+//                    Log.v("Origin",bp.getContent().toString());
+////                    String outputString = new StringCutter().cut(bp.getContent().toString());
+//                    String outputString = cut(bp.getContent().toString());
+//                    Log.v("Content",outputString);
+//
+//                    out.write(outputString);
+//
+//                    out.close();
+//                }
+//                getResult();
+//            } catch (Exception mex) {
+//                mex.printStackTrace();
+//            }
+//            return null;
+//        }
+//    }
 
     private String cut(String input){
         input=input.toLowerCase();
@@ -192,6 +223,37 @@ public class EmailPhrases_Builder implements Phrases_Builder {
     }
 
     public Phrases_Product getResult(){
+        Log.v("sdCard",Environment.getExternalStorageDirectory().getPath());
+        String path = Environment.getExternalStorageDirectory().getPath();
+        File dir = new File(path + "/EmailExtractor/");
+        if (!dir.exists()){
+            dir.mkdir();
+        }
+        try{
+            store.connect("imap.gmail.com", address, password);
+            Folder sentBox = store.getFolder("[Gmail]/Sent Mail");
+            sentBox.open(Folder.READ_ONLY);
+            Log.v("sentBox Num",""+sentBox.getMessageCount());
+
+            int count;
+            for (count = 1 ; count <=sentBox.getMessageCount() ; count++ ){
+                File file = new File(dir,fileName+count+".txt");
+                Message msg = sentBox.getMessage(count);
+                Writer out = new OutputStreamWriter(new FileOutputStream(file));
+
+                Multipart mp = (Multipart) msg.getContent();
+                BodyPart bp = mp.getBodyPart(0);
+                Log.v("Origin",bp.getContent().toString());
+//                    String outputString = new StringCutter().cut(bp.getContent().toString());
+                String outputString = cut(bp.getContent().toString());
+                Log.v("Content",outputString);
+
+                out.write(outputString);
+                out.close();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return null;
     }
 }

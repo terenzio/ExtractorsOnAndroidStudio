@@ -37,6 +37,9 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
     private final String TAG = "FacebookTest";
     private final String fileName = "BagOfWordFacebook";
 
+    private final int dataControlCount = 2;
+    private static int dataCount = 1;
+
     private static LoginResult getLoginResult = null;
     private static String myID = null;
     private static String messageData = null;
@@ -171,20 +174,30 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                 }//end for data array
                 allMessage.add(messageAll.toString());
                 //data paging
-                if(data.has("paging")){
-                    JSONObject nextPaging = data.getJSONObject("paging");
-                    handlePaging(response);
-                    Log.d(TAG,"Data link = "+nextPaging.toString());
-                }
-                else{
+                if(dataControlCount == dataCount){
                     for(String message : allMessage)
                         messageData += message;
                     getResult();
+                    return;
+                }
+                else {
+                    if(data.has("paging")){
+                        JSONObject nextPaging = data.getJSONObject("paging");
+                        handlePaging(response);
+                        Log.d(TAG,"Data link = "+nextPaging.toString());
+                    }
+                    else{
+                        for(String message : allMessage)
+                            messageData += message;
+                        getResult();
+                        return;
+                    }
                 }
             }//end data
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        dataCount++;
     }
 
     private void handlePaging(GraphResponse response){
@@ -245,14 +258,14 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
     private void writeToFile(String fileName, String data){
         //Create the directory for the user's public pictures directory
         String path = Environment.getExternalStorageDirectory().getPath();
-//	    File dir = new File(path + "/facebookOutboxextractor");
-        File dir = new File(path + "/");
+	    File dir = new File(path + "/FacebookExtractor");
+//        File dir = new File(path + "/");
         if (!dir.exists()){
             dir.mkdir();
         }
         try {
-//	    	File file = new File(path + "/facebookOutboxextractor/" + fileName);
-            File file = new File(path + "/" + fileName);
+	    	File file = new File(path + "/FacebookExtractor/" + fileName);
+//            File file = new File(path + "/" + fileName);
             FileOutputStream fout = new FileOutputStream(file);
             fout.write(data.getBytes());
             fout.close();

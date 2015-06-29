@@ -23,7 +23,7 @@ import selab.csie.ntu.tw.personalcorpusextractor.ExtractorSelector;
  */
 public class SMSPhrases_Builder implements Phrases_Builder {
     private static SMSPhrases_Builder smsPhrases_Builder;
-
+    private final String fileName = "BagOfWordSMS";
     public static SMSPhrases_Builder getMultiInstance(){
         smsPhrases_Builder = new SMSPhrases_Builder();
         return smsPhrases_Builder;
