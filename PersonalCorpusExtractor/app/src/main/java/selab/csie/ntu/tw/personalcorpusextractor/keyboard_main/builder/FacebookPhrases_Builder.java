@@ -1,6 +1,7 @@
 package selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Environment;
 import android.util.Log;
@@ -40,9 +41,9 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
     private final int dataControlCount = 2;
     private static int dataCount = 1;
 
-    private static LoginResult getLoginResult = null;
-    private static String myID = null;
-    private static String messageData = null;
+    private static LoginResult getLoginResult;
+    private static String myID;
+    private static String messageData;
     private ArrayList<String> allMessage = new ArrayList<>();
 
     private static int count = 0;
@@ -224,7 +225,6 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 //                                replaceAll("[^a-zA-Z0-9 \\s]+", "");
                 //Other way
 //                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
-
 //                        FileUtils.writeToFile(fileName, englishOnlyString);
                 writeToFile(fileName+String.valueOf(count)+".txt", messageData);
                 count++;

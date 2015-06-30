@@ -23,7 +23,9 @@ public class SMSPhrases_Builder implements Phrases_Builder {
     private static SMSPhrases_Builder smsPhrases_Builder;
     private final String fileName = "BagOfWordSMS";
 
+
     private List<SMSData> smsList;
+    private static String messageData;
     private static int count = 0;
 
 
@@ -91,11 +93,10 @@ public class SMSPhrases_Builder implements Phrases_Builder {
         dialog.setTitle("File Request");
         if (!smsList.isEmpty()) {
             if (isExternalStorageWritable()) {
-                for(SMSData sms : smsList){
-                    String messageData = sms.getBody();
-                    writeToFile(fileName+String.valueOf(count)+".txt", messageData);
-                    count++;
-                }
+                for(SMSData sms : smsList)
+                    messageData += sms.getBody() + "\n";
+                writeToFile(fileName+String.valueOf(count)+".txt", messageData);
+                count++;
                 dialog.setMessage("Write successfully!");
             } else dialog.setMessage("Write fail!");
         } else  dialog.setMessage("Write fail!");

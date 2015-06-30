@@ -13,6 +13,8 @@ import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
@@ -30,6 +32,10 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
 
     private String address="redmine.selab.centos@gmail.com";
     private String password="Selab305!";
+
+    private static int count = 0;
+
+    private static String messageData;
 
     private String[] urls= {"http","ftp","www"};
     private boolean hasSpace ;
@@ -54,7 +60,7 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
             session = Session.getInstance(props);
             //session.setDebug(true);
             store = session.getStore("imaps");
-
+            messageData = null;
             getResult();
         } catch (Exception mex) {
             mex.printStackTrace();
@@ -221,6 +227,8 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
     }
 
     public Phrases_Product getResult(){
+        AlertDialog.Builder dialog = new AlertDialog.Builder(ExtractorSelector.getInstance());
+        dialog.setTitle("File Request");
         Log.v("sdCard",Environment.getExternalStorageDirectory().getPath());
         String path = Environment.getExternalStorageDirectory().getPath();
         File dir = new File(path + "/EmailExtractor/");
@@ -233,25 +241,32 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
             sentBox.open(Folder.READ_ONLY);
             Log.v("sentBox Num",""+sentBox.getMessageCount());
 
-            int count;
-            for (count = 1 ; count <=sentBox.getMessageCount() ; count++ ){
-                File file = new File(dir,fileName+count+".txt");
-                Message msg = sentBox.getMessage(count);
-                Writer out = new OutputStreamWriter(new FileOutputStream(file));
-
+            int msgCount;
+            for(msgCount = 1 ; msgCount <= sentBox.getMessageCount();msgCount++){
+                Message msg = sentBox.getMessage(msgCount);
                 Multipart mp = (Multipart) msg.getContent();
                 BodyPart bp = mp.getBodyPart(0);
                 Log.v("Origin",bp.getContent().toString());
-//                    String outputString = new StringCutter().cut(bp.getContent().toString());
                 String outputString = cut(bp.getContent().toString());
                 Log.v("Content",outputString);
-
-                out.write(outputString);
-                out.close();
+                if(outputString!=null)
+                    messageData += outputString + "\n";
             }
+            File file = new File(dir, fileName + count + ".txt");
+            Writer out = new OutputStreamWriter(new FileOutputStream(file));
+            out.write(messageData);
+            out.close();
         }catch (Exception e){
             e.printStackTrace();
         }
+        dialog.setMessage("Write successfully!");
+        dialog.setPositiveButton(R.string.ok_label,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(
+                            DialogInterface dialoginterface, int i) {
+                    }
+                });
+        dialog.show();
         return null;
     }
 }

@@ -1,6 +1,7 @@
 package selab.csie.ntu.tw.personalcorpusextractor;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -30,7 +31,6 @@ public class ExtractorSelector extends Activity{
     private CheckBox facebookCheckBox,emailCheckBox,SMSCheckBox;
     public static CallbackManager callbackManager;
     private static ExtractorSelector extractorSelector;
-
     public static ExtractorSelector getInstance(){
         return extractorSelector;
     }
@@ -62,10 +62,6 @@ public class ExtractorSelector extends Activity{
             @Override
             public void onClick(View v){
                 if(facebookCheckBox.isChecked()){
-//                    processingDialog = new AlertDialog.Builder(ExtractorSelector.this);
-//                    processingDialog.setTitle("Waiting");
-//                    processingDialog.setMessage("Please wait for a moment");
-//                    processingDialog.show();
                     FacebookPhrases_Builder.getMultiInstance();
                 }
                 else if(emailCheckBox.isChecked()){
