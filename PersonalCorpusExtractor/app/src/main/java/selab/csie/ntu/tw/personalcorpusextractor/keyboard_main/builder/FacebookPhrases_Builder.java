@@ -63,7 +63,7 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                     public void onSuccess(LoginResult loginResult) {
                         getLoginResult = loginResult;
                         Log.d(TAG,"Success");
-                        messageData = null;
+                        messageData = "";
                         getMyID();
                         getMessages();
                     }
