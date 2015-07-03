@@ -35,10 +35,13 @@ import com.facebook.login.LoginResult;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -53,6 +56,7 @@ import java.util.TreeMap;
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.EmailPhrases_Builder;
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.FacebookPhrases_Builder;
 import selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder.SMSPhrases_Builder;
+import selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.tree.PhraseSuffix_Tree;
 import selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.visitor.TreeVisitor;
 import tw.edu.ntu.selab.query_refinement_system.AssetManager;
 import tw.edu.ntu.selab.query_refinement_system.PersonalOntologyBuilder;
@@ -222,7 +226,7 @@ public class ExtractorSelector extends Activity{
             protected Set<String> doInBackground(Void... params) {
                 try {
                     long start = System.currentTimeMillis();
-                    Map<String,Double> detailedExtensions = refiner.getQueryExtensionsAndSimilarities(ontology, query, "Facebook", 0.1, 10);
+                    Map<String,Double> detailedExtensions = refiner.getQueryExtensionsAndSimilarities(ontology, query.trim(), "Facebook", 0.1, 10);
                     long end = System.currentTimeMillis();
                     if(detailedExtensions == null || detailedExtensions.size() == 0) {
                         return null;
@@ -245,9 +249,10 @@ public class ExtractorSelector extends Activity{
 
                     Set<String> extensions = new LinkedHashSet();
                     for(Map.Entry<String, Double> extension : sortedDetailedExtensions.entrySet()) {
-                        extensions.add(String.format("%-15s%.2f", extension.getKey(), extension.getValue()));
+                     //   extensions.add(String.format("%-15s%.2f", extension.getKey(), extension.getValue()));
+                        extensions.add(String.format("%-15s", extension.getKey()));
                     }
-                    extensions.add("Total time: " + String.format("%.2f seconds", (end-start)/1000.0));
+                    extensions.add("Total Time: " + String.format("%.2f seconds", (end-start)/1000.0));
 //					Set<String> extensions = refiner.getQueryExtensions(Collections.singletonList(query), 10);
                     return extensions;
                 } catch (StringProcessingException e) {
@@ -267,12 +272,14 @@ public class ExtractorSelector extends Activity{
         };
         t.execute();
     }
+
     public void readFile(View view) {
         Toast toast1 = Toast.makeText(getApplicationContext(), "Reading File...", Toast.LENGTH_SHORT);
         toast1.show();
 
         String path = Environment.getExternalStorageDirectory().getPath();
-        File file = new File(path,FacebookPhrases_Builder.getFileName());
+       // File file = new File(path,FacebookPhrases_Builder.getFileName());
+        File file = new File(path,"telescoped.txt");
 
         //Read text from file
         StringBuilder text = new StringBuilder();
@@ -284,6 +291,13 @@ public class ExtractorSelector extends Activity{
             while ((line = br.readLine()) != null) {
                 text.append(line);
                 text.append('\n');
+
+                try {
+                    builder.updateOntology(Collections.singletonList(line), "Email", null);
+                }
+                catch (OntologyUpdateException e) {
+
+                }
             }
             br.close();
         }
@@ -297,13 +311,137 @@ public class ExtractorSelector extends Activity{
         //Set the text
         tv.setText(text);
 
-        TreeVisitor concreteTreeVisitor = new TreeVisitor();
+        //update OntologyTest
+
+
+//        TreeVisitor concreteTreeVisitor = new TreeVisitor();
+//        try {
+//            concreteTreeVisitor.visitTree(file);
+//        } catch (Exception e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
+
+    }
+
+    public void testTree(View view) {
+
+        PrintWriter outfileTelescoped = null;
+
+        //Telescoped Version
+        Toast toast1 = Toast.makeText(getApplicationContext(), "Testing Tree...", Toast.LENGTH_SHORT);
+        toast1.show();
+
+        String path = Environment.getExternalStorageDirectory().getPath();
+        File file = new File(path,"simple.txt"); //this should only have one sentence
+        StringBuilder text = new StringBuilder();
+
+
         try {
-            concreteTreeVisitor.visitTree(file);
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+
+            while ((line = br.readLine()) != null) {//need to constuct tree with ONE line
+                text.append(line);
+                text.append('\n');
+                PhraseSuffix_Tree st = new PhraseSuffix_Tree(500000);
+                Log.v("keyboard line: ", line);
+                String [] word=line.split(" ");
+                    for(int i = 0; i < word.length; i++){
+    //				if(i==word.length-1) word[i]+="$";
+                        try {
+
+                            st.addWord(word[i]);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                st.sep();
+
+                //Where do put this section?!!
+                    st.signSignificance();
+                    st.printSignificanceNodes();
+
+
+                    //Printing Telescope to a file:
+                    String path2 = Environment.getExternalStorageDirectory().getPath();
+                    File dir = new File(path2 + "/");
+                    if (!dir.exists()){
+                        dir.mkdir();
+                    }
+                    File fileTelescoped = new File(path + "/" + "telescoped.txt");
+
+                    try {
+                        outfileTelescoped = new PrintWriter(fileTelescoped);
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    st.printTelescopeTree(outfileTelescoped, builder);
+                //Where do put this file?!!----------------------End
+
+            }
+            br.close();
         }
+        catch (IOException e) {
+            //You'll need to add proper error handling here
+        }
+
+
+        //Where do put this file?!!
+//        st.signSignificance();
+//        st.printSignificanceNodes();
+//
+//
+//        //Printing Telescope to a file:
+//        String path2 = Environment.getExternalStorageDirectory().getPath();
+//        File dir = new File(path2 + "/");
+//        if (!dir.exists()){
+//            dir.mkdir();
+//        }
+//        File fileTelescoped = new File(path + "/" + "telescoped.txt");
+//
+//        try {
+//             outfileTelescoped = new PrintWriter(fileTelescoped);
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//
+//        st.printTelescopeTree(outfileTelescoped, builder);
+        //Where do put this file?!!----------------------End
+
+
+        //try {
+          //  PrintWriter out = new PrintWriter(new FileWriter("st.dot"));
+         //   st.printTelescopeTree2();	//print out all the combinations but remove one word branches
+        //} catch (IOException e) {
+
+        //}
+
+        //Find the view by its id
+     //   TextView tv = (TextView)findViewById(R.id.outPutCorpus);
+        //Set the text
+    //    tv.setText(text);
+
+
+
+
+        // PrintWriter out = new PrintWriter(new FileWriter("st.dot"));
+
+//        String phrase;
+//        while((phrase=in.readLine()) != null){
+//            String [] word=phrase.split(" ");
+//            for(int i = 0; i < word.length; i++){
+////				if(i==word.length-1) word[i]+="$";
+//                st.addWord(word[i]);
+//            }
+//            st.sep();
+//        }
+     //   in.close();
+//        st.signSignificance();
+//        st.printSignificanceNodes();
+//        st.printTelescopeTree(out);	//print out all the combinations but remove one word branches
+//       // out.close();
 
     }
 

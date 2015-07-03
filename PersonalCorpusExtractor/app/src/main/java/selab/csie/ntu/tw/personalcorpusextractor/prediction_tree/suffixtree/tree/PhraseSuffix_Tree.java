@@ -1,15 +1,21 @@
 package selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.tree;
 
+import android.util.Log;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
 import  selab.csie.ntu.tw.personalcorpusextractor.prediction_tree.suffixtree.builders.*;
+import tw.edu.ntu.selab.query_refinement_system.PersonalOntologyBuilder;
+import tw.edu.ntu.selab.query_refinement_system.exceptions.OntologyUpdateException;
+
 import com.aliasi.lm.TokenizedLM;
 import com.aliasi.tokenizer.IndoEuropeanTokenizerFactory;
 import com.aliasi.tokenizer.TokenizerFactory;
@@ -77,6 +83,7 @@ public class PhraseSuffix_Tree {
        }
 
        public void addWord(String c) throws Exception {
+           Log.v("addWord line: ", c);
            text[++position] = c;
            needSuffixLink = -1;
            remainder++;
@@ -133,14 +140,34 @@ public class PhraseSuffix_Tree {
        		st.dot file. In order to see the suffix tree as a PNG image, run the following command:
        		dot -Tpng -O st.dot
         **************************************************************************************************/
-       void printEdges(int x, PrintWriter out) {
+       void printEdges(int x, PrintWriter out, PersonalOntologyBuilder builder) {
+           Log.v("EdgeString: ","Inside");
            for (int child : nodes[x].next.values()) {
         	   if(nodes[child]!=null){
-        		   out.println("\tnode"+x+" -> node"+child+" [label=\""+edgeString(child)+"\",weight=3]");
-        		   printEdges(child, out);
+        		  // out.println("\tnode"+x+" -> node"+child+" [label=\""+edgeString(child)+"\",weight=3]");
+                   out.println(edgeString(child));
+                   Log.v("EdgeString: ", "\tnode" + x + " -> node" + child + " [label=\"" + edgeString(child) + "\",weight=3]");
+                   try {
+                       builder.updateOntology(Collections.singletonList(edgeString(child)), "Facebook", null);
+                   } catch (OntologyUpdateException e) {
+                       e.printStackTrace();
+                   }
+                   printEdges(child, out, builder);
         	   }
            }
        }
+
+//    void printEdges2(int x) {
+//        Log.v("EdgeString: ","Inside");
+//        for (int child : nodes[x].next.values()) {
+//            if(nodes[child]!=null){
+//               // out.println("\tnode"+x+" -> node"+child+" [label=\""+edgeString(child)+"\",weight=3]");
+//                Log.v("EdgeString: ",edgeString(child));
+//                printEdges2(child);
+//            }
+//        }
+//    }
+
 	   String edgeString(int node) {
 	      String[] s= Arrays.copyOfRange(text, nodes[node].start, Math.min(position + 1, nodes[node].end));
 	      String a = "";
@@ -256,6 +283,7 @@ public class PhraseSuffix_Tree {
     			   for(int i = 0 ; i < count ; i++){
     				   if(child==parentNode[i]){
         				   System.out.println("node"+x+" -> node"+child+" [label=\""+telescopeStrings[i]+"\",weight=3]");
+                           Log.v("Telecoped: ", "node"+x+" -> node"+child+" [label=\""+telescopeStrings[i]+"\",weight=3]");
         				   nodes[childNode[i]]=null;
         				   telescoping=true;
         			   }
@@ -268,36 +296,63 @@ public class PhraseSuffix_Tree {
     	   
     	   //update new frequency to parent node 
        }
-       public void printTelescopeTree(PrintWriter out){
-    	   out.println("digraph origin {");
-    	   out.println("\trankdir = LR;");
-           out.println("\tedge [arrowsize=0.4,fontsize=10]");
-           out.println("\tnode1 [label=\"\",style=filled,fillcolor=lightgrey,shape=circle,width=.1,height=.1];");
+       public void printTelescopeTree(PrintWriter out,   PersonalOntologyBuilder builder) {
+           System.out.println("PrintTelescope");
+           Log.v("EdgeString: ", "printTelescope");
+    	  // out.println("digraph origin {");
+    	  // out.println("\trankdir = LR;");
+          // out.println("\tedge [arrowsize=0.4,fontsize=10]");
+          // out.println("\tnode1 [label=\"\",style=filled,fillcolor=lightgrey,shape=circle,width=.1,height=.1];");
 //           out.println("//------leaves------");
 //           printLeaves(root, out);
 //           out.println("//------internal nodes------");
 //           printInternalNodes(root, out);
-           out.println("//------edges------");
-           printEdges(root, out);
+           //out.println("//------edges------");
+           printEdges(root, out, builder);
+         //  printEdges2(root);
 //         out.println("//------suffix links------");
 //         printSLinks(root);
-           out.println("}");
+           //out.println("}");
            telescope(root);
            traveralNode(root);
            System.out.println();
        }
+
+    public void printTelescopeTree2() {
+        System.out.println("PrintTelescope");
+        Log.v("EdgeString: ", "printTelescope");
+        //out.println("digraph origin {");
+        //out.println("\trankdir = LR;");
+        //out.println("\tedge [arrowsize=0.4,fontsize=10]");
+        //out.println("\tnode1 [label=\"\",style=filled,fillcolor=lightgrey,shape=circle,width=.1,height=.1];");
+//           out.println("//------leaves------");
+//           printLeaves(root, out);
+//           out.println("//------internal nodes------");
+//           printInternalNodes(root, out);
+        //out.println("//------edges------");
+     //   printEdges(root, out);
+     //   printEdges2(root);
+//         out.println("//------suffix links------");
+//         printSLinks(root);
+        //out.println("}");
+        telescope(root);
+        traveralNode(root);
+        System.out.println();
+    }
        
        
        /**************************************************************************************************
         * Significance Actions
         **************************************************************************************************/   
        public void signSignificance(){
+           Log.v("signSignificance() ", "Inside");
         	for(int i = 1; i < nodes.length;++i){
         		if(nodes[i]==null) break;
         		if (nodes[i].next.size() == 0)   nodes[i].Significance=true;
         	}
        }
        public void printSignificanceNodes(){
+           Log.v(" printSignificanceNodes() ", "Inside");
           	for(int i = 1; i < nodes.length;++i){
           		if(nodes[i]==null) break;
           		if (nodes[i].Significance){
@@ -317,7 +372,7 @@ public class PhraseSuffix_Tree {
 //           out.println("//------internal nodes------");
 //           printFullInternalNodes(root, out);
            out.println("//------edges------");
-           printEdges(root, out);
+         //  printEdges(root, out);
 //           out.println("//------suffix links------");
 //           printFullSLinks(root, out);
            out.println("}");
