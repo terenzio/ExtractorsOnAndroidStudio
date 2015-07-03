@@ -24,6 +24,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import selab.csie.ntu.tw.personalcorpusextractor.ExtractorSelector;
 import selab.csie.ntu.tw.personalcorpusextractor.R;
@@ -117,6 +120,42 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
         request.executeAsync();
     }
 
+
+    private String regexUrlandEmailString(String message){
+        String emailRegex = "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+";
+        String urlRegexWithHttp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]" +
+                "*[-a-zA-Z0-9+&@#/%=~_|]";
+        String urlRegexWithoutHttp = "[-a-zA-Z0-9+&@#/%?=~_|!:,.;]" +
+                "*[-a-zA-Z0-9+&@#/%=~_|]";
+
+        Pattern emailPattern = Pattern.compile(emailRegex, Pattern.CASE_INSENSITIVE);
+        Matcher matchEmail = emailPattern.matcher(message);
+        List<String> allEmail = new ArrayList<>();
+        while (matchEmail.find()) allEmail.add(matchEmail.group());
+
+        Pattern urlPatternWithHttp = Pattern.compile(urlRegexWithHttp,Pattern.CASE_INSENSITIVE);
+        Matcher matchUrlWithHttp = urlPatternWithHttp.matcher(message);
+        List <String> allUrl = new ArrayList<>();
+        while (matchUrlWithHttp.find()) allUrl.add(matchUrlWithHttp.group());
+
+        Pattern urlPatternWithoutHttp = Pattern.compile(urlRegexWithoutHttp,Pattern.CASE_INSENSITIVE);
+        Matcher matchUrlWithoutHttp = urlPatternWithoutHttp.matcher(message);
+        while (matchUrlWithoutHttp.find()){
+            if(matchUrlWithoutHttp.group().toString().contains(".") &&
+                    !matchUrlWithoutHttp.group().toString().contains("@") )
+                allUrl.add(matchUrlWithoutHttp.group());
+        }
+        String result = "";
+        String allEmailString = "";
+        String allUrlString = "";
+        for(String a: allEmail) allEmailString += a + "\n";
+        for(String a: allUrl) allUrlString += a + "\n";
+        if(allEmailString.length()!=0) result = result + allEmailString;
+        if(allUrlString.length()!=0) result = result + allUrlString;
+
+        return result;
+    }
+
     //Catch all dialog with 25 message at the moment if catch all, must be add coments paging
     private void handleMessage(GraphResponse response) {
         JSONObject data = response.getJSONObject();
@@ -155,6 +194,7 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 //                                                //This line handle a message include white space ()
 //                                                messageAll.append(message.getString("message") + "\n");
 
+
                                                 //Other way to implement a message which has no white space
                                                 String noSpaceMessage = message.getString("message").
                                                         replaceAll("[^a-zA-Z0-9 \\s]+", "");
@@ -165,6 +205,9 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                                                     totalMessage += mergeString[spaceNumber] + " ";
                                                 if (totalMessage.length() >= 3)
                                                     messageAll.append(totalMessage + "\n");
+
+                                                //catch url and email
+                                                messageAll.append(regexUrlandEmailString(message.getString("message")+"\n"));
                                             }
                                         }
                                     }

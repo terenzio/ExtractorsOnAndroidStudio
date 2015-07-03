@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -56,9 +58,9 @@ public class SMSPhrases_Builder implements Phrases_Builder {
             }
         }
         c.close();
-
         // Set smsList in the ListAdapter
 //        setListAdapter(new ListAdapter(this, smsList));
+        messageData = "";
         getResult();
     }
 
@@ -86,6 +88,40 @@ public class SMSPhrases_Builder implements Phrases_Builder {
         }
 
     }
+    private String regexUrlandEmailString(String message){
+        String emailRegex = "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+";
+        String urlRegexWithHttp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]" +
+                "*[-a-zA-Z0-9+&@#/%=~_|]";
+        String urlRegexWithoutHttp = "[-a-zA-Z0-9+&@#/%?=~_|!:,.;]" +
+                "*[-a-zA-Z0-9+&@#/%=~_|]";
+
+        Pattern emailPattern = Pattern.compile(emailRegex, Pattern.CASE_INSENSITIVE);
+        Matcher matchEmail = emailPattern.matcher(message);
+        List <String> allEmail = new ArrayList<>();
+        while (matchEmail.find()) allEmail.add(matchEmail.group());
+
+        Pattern urlPatternWithHttp = Pattern.compile(urlRegexWithHttp,Pattern.CASE_INSENSITIVE);
+        Matcher matchUrlWithHttp = urlPatternWithHttp.matcher(message);
+        List <String> allUrl = new ArrayList<>();
+        while (matchUrlWithHttp.find()) allUrl.add(matchUrlWithHttp.group());
+
+        Pattern urlPatternWithoutHttp = Pattern.compile(urlRegexWithoutHttp,Pattern.CASE_INSENSITIVE);
+        Matcher matchUrlWithoutHttp = urlPatternWithoutHttp.matcher(message);
+        while (matchUrlWithoutHttp.find()){
+            if(matchUrlWithoutHttp.group().toString().contains(".") &&
+                    !matchUrlWithoutHttp.group().toString().contains("@") )
+                allUrl.add(matchUrlWithoutHttp.group());
+        }
+        String result = "";
+        String allEmailString = "";
+        String allUrlString = "";
+        for(String a: allEmail) allEmailString += a + "\n";
+        for(String a: allUrl) allUrlString += a + "\n";
+        if(allEmailString.length()!=0) result = result + allEmailString;
+        if(allUrlString.length()!=0) result = result + allUrlString;
+
+        return result;
+    }
 
 
     public Phrases_Product getResult(){
@@ -93,8 +129,14 @@ public class SMSPhrases_Builder implements Phrases_Builder {
         dialog.setTitle("File Request");
         if (!smsList.isEmpty()) {
             if (isExternalStorageWritable()) {
-                for(SMSData sms : smsList)
-                    messageData += sms.getBody() + "\n";
+                for(SMSData sms : smsList) {
+                    String noSpaceMessage = sms.getBody().replaceAll("[^a-zA-Z0-9 \\s]+", "");
+                    String totalMessage = "";
+                    String[] mergeString = noSpaceMessage.split("\\s");
+                    for(String a :mergeString) totalMessage += a + " ";
+                    if (totalMessage.length() >= 3) messageData += totalMessage + "\n";
+                    messageData += regexUrlandEmailString(sms.getBody());
+                }
                 writeToFile(fileName+String.valueOf(count)+".txt", messageData);
                 count++;
                 dialog.setMessage("Write successfully!");

@@ -6,7 +6,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,7 +73,8 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
         super.onPostExecute(result);
         dialog = new AlertDialog.Builder(ExtractorSelector.getInstance());
         dialog.setTitle("File Request");
-        dialog.setMessage("Write successfully!");
+        if (!messageData.isEmpty()) dialog.setMessage("Write successfully!");
+        else dialog.setMessage("Write fail!");
         dialog.setPositiveButton(R.string.ok_label,
                 new DialogInterface.OnClickListener() {
                     public void onClick(
@@ -84,7 +84,7 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
         dialog.show();
     }
 
-    private void cutString(String allMessage,String origin){
+    private void regexString(String allMessage,String origin){
         String emailRegex = "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+";
         String urlRegexWithHttp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]" +
                 "*[-a-zA-Z0-9+&@#/%=~_|]";
@@ -112,6 +112,7 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
                 allUrl.add(matchUrlWithoutHttp.group());
         }
 
+        allMessage = allMessage.replaceAll("[^a-zA-Z0-9!,.:;? ]+","");
         String []regex = allMessage.split("[!,.:;?]+");
 
         String outputString ="";
@@ -123,12 +124,11 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
         String allUrlString = "";
         for(String a: allEmail) allEmailString += a + "\n";
         for(String a: allUrl) allUrlString += a + "\n";
-        if(allEmailString.length()!=0) outputString = outputString + allEmailString + "\n";
-        if(allUrlString.length()!=0) outputString = outputString + allUrlString + "\n";
+        if(allEmailString.length()!=0) outputString = outputString + allEmailString;
+        if(allUrlString.length()!=0) outputString = outputString + allUrlString;
 
         Log.v("Content",outputString);
-        if(outputString!=null)
-            messageData += outputString + "\n\n\n\n\n";
+        messageData += outputString;
     }
 
     public Phrases_Product getResult(){
@@ -156,7 +156,7 @@ public class EmailPhrases_Builder extends AsyncTask<Object, Object, Object> impl
                 for(String line : message){
                     allMessage += line;
                 }
-                cutString(allMessage,bp.getContent().toString());
+                regexString(allMessage,bp.getContent().toString());
                 Log.v("OriginRank", allMessage);
             }
             File file = new File(dir, fileName + count + ".txt");
