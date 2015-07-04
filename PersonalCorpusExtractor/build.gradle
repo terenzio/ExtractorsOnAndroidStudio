@@ -1,7 +1,10 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    repositories {
+
+    repositories {configurations {
+        all*.exclude group: 'com.android.support', module: 'support-v4'
+    }
         jcenter()
     }
     dependencies {

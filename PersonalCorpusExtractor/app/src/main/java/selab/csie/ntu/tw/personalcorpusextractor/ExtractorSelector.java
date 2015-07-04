@@ -15,8 +15,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -27,11 +25,7 @@ import android.widget.Toast;
 
 
 import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
-import com.facebook.login.LoginManager;
-import com.facebook.login.LoginResult;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -72,7 +66,6 @@ public class ExtractorSelector extends Activity{
     private CheckBox facebookCheckBox,emailCheckBox,SMSCheckBox;
     public static CallbackManager callbackManager;
     private static ExtractorSelector extractorSelector;
-
     //Ontology Files
     private PersonalOntology ontology;
     private QueryRefiner refiner;
@@ -126,7 +119,8 @@ public class ExtractorSelector extends Activity{
                     FacebookPhrases_Builder.getMultiInstance();
                 }
                 else if(emailCheckBox.isChecked()){
-                    EmailPhrases_Builder.getMultiInstance();
+                    new EmailPhrases_Builder().execute(this);
+//                    EmailPhrases_Builder.getMultiInstance();
                 }
                 else if(SMSCheckBox.isChecked()){
                     SMSPhrases_Builder.getMultiInstance();

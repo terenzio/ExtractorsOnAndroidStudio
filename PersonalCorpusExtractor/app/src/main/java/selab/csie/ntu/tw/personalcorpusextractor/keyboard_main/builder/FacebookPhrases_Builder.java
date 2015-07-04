@@ -1,6 +1,7 @@
 package selab.csie.ntu.tw.personalcorpusextractor.keyboard_main.builder;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Environment;
 import android.util.Log;
@@ -23,6 +24,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import selab.csie.ntu.tw.personalcorpusextractor.ExtractorSelector;
 import selab.csie.ntu.tw.personalcorpusextractor.R;
@@ -36,18 +40,16 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 
     private final String TAG = "FacebookTest";
     private final String fileName = "BagOfWordFacebook";
-    private static String finalFileName = "";
 
-    private static LoginResult getLoginResult = null;
-    private static String myID = null;
-    private static String messageData = null;
+    private final int dataControlCount = 2;
+    private static int dataCount = 1;
+
+    private static LoginResult getLoginResult;
+    private static String myID;
+    private static String messageData;
     private ArrayList<String> allMessage = new ArrayList<>();
 
     private static int count = 0;
-
-    public static String getFileName() {
-        return finalFileName;
-    }
 
     public static FacebookPhrases_Builder getMultiInstance(){
         facebookPhrases_Builder = new FacebookPhrases_Builder();
@@ -64,7 +66,7 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                     public void onSuccess(LoginResult loginResult) {
                         getLoginResult = loginResult;
                         Log.d(TAG,"Success");
-                        messageData = null;
+                        messageData = "";
                         getMyID();
                         getMessages();
                     }
@@ -118,6 +120,42 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
         request.executeAsync();
     }
 
+
+    private String regexUrlandEmailString(String message){
+        String emailRegex = "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+";
+        String urlRegexWithHttp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]" +
+                "*[-a-zA-Z0-9+&@#/%=~_|]";
+        String urlRegexWithoutHttp = "[-a-zA-Z0-9+&@#/%?=~_|!:,.;]" +
+                "*[-a-zA-Z0-9+&@#/%=~_|]";
+
+        Pattern emailPattern = Pattern.compile(emailRegex, Pattern.CASE_INSENSITIVE);
+        Matcher matchEmail = emailPattern.matcher(message);
+        List<String> allEmail = new ArrayList<>();
+        while (matchEmail.find()) allEmail.add(matchEmail.group());
+
+        Pattern urlPatternWithHttp = Pattern.compile(urlRegexWithHttp,Pattern.CASE_INSENSITIVE);
+        Matcher matchUrlWithHttp = urlPatternWithHttp.matcher(message);
+        List <String> allUrl = new ArrayList<>();
+        while (matchUrlWithHttp.find()) allUrl.add(matchUrlWithHttp.group());
+
+        Pattern urlPatternWithoutHttp = Pattern.compile(urlRegexWithoutHttp,Pattern.CASE_INSENSITIVE);
+        Matcher matchUrlWithoutHttp = urlPatternWithoutHttp.matcher(message);
+        while (matchUrlWithoutHttp.find()){
+            if(matchUrlWithoutHttp.group().toString().contains(".") &&
+                    !matchUrlWithoutHttp.group().toString().contains("@") )
+                allUrl.add(matchUrlWithoutHttp.group());
+        }
+        String result = "";
+        String allEmailString = "";
+        String allUrlString = "";
+        for(String a: allEmail) allEmailString += a + "\n";
+        for(String a: allUrl) allUrlString += a + "\n";
+        if(allEmailString.length()!=0) result = result + allEmailString;
+        if(allUrlString.length()!=0) result = result + allUrlString;
+
+        return result;
+    }
+
     //Catch all dialog with 25 message at the moment if catch all, must be add coments paging
     private void handleMessage(GraphResponse response) {
         JSONObject data = response.getJSONObject();
@@ -156,6 +194,7 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 //                                                //This line handle a message include white space ()
 //                                                messageAll.append(message.getString("message") + "\n");
 
+
                                                 //Other way to implement a message which has no white space
                                                 String noSpaceMessage = message.getString("message").
                                                         replaceAll("[^a-zA-Z0-9 \\s]+", "");
@@ -166,6 +205,9 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                                                     totalMessage += mergeString[spaceNumber] + " ";
                                                 if (totalMessage.length() >= 3)
                                                     messageAll.append(totalMessage + "\n");
+
+                                                //catch url and email
+                                                messageAll.append(regexUrlandEmailString(message.getString("message")+"\n"));
                                             }
                                         }
                                     }
@@ -176,23 +218,30 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
                 }//end for data array
                 allMessage.add(messageAll.toString());
                 //data paging
-                for(String message : allMessage)
-                    messageData += message;
-                getResult();
-//                if(data.has("paging")){
-//                    JSONObject nextPaging = data.getJSONObject("paging");
-//                    handlePaging(response);
-//                    Log.d(TAG,"Data link = "+nextPaging.toString());
-//                }
-//                else{
-//                    for(String message : allMessage)
-//                        messageData += message;
-//                    getResult();
-//                }
+                if(dataControlCount == dataCount){
+                    for(String message : allMessage)
+                        messageData += message;
+                    getResult();
+                    return;
+                }
+                else {
+                    if(data.has("paging")){
+                        JSONObject nextPaging = data.getJSONObject("paging");
+                        handlePaging(response);
+                        Log.d(TAG,"Data link = "+nextPaging.toString());
+                    }
+                    else{
+                        for(String message : allMessage)
+                            messageData += message;
+                        getResult();
+                        return;
+                    }
+                }
             }//end data
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        dataCount++;
     }
 
     private void handlePaging(GraphResponse response){
@@ -219,11 +268,8 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
 //                                replaceAll("[^a-zA-Z0-9 \\s]+", "");
                 //Other way
 //                        String englishOnlyString = messageData.replaceAll("[^a-zA-Z0-9 \\s]+", "");
-
 //                        FileUtils.writeToFile(fileName, englishOnlyString);
-                finalFileName = fileName+String.valueOf(count)+".txt";
                 writeToFile(fileName+String.valueOf(count)+".txt", messageData);
-
                 count++;
                 dialog.setMessage("Write successfully!");
             } else dialog.setMessage("Write fail!");
@@ -255,14 +301,14 @@ public class FacebookPhrases_Builder implements Phrases_Builder {
     private void writeToFile(String fileName, String data){
         //Create the directory for the user's public pictures directory
         String path = Environment.getExternalStorageDirectory().getPath();
-//	    File dir = new File(path + "/facebookOutboxextractor");
-        File dir = new File(path + "/");
+        File dir = new File(path + "/FacebookExtractor");
+//        File dir = new File(path + "/");
         if (!dir.exists()){
             dir.mkdir();
         }
         try {
-//	    	File file = new File(path + "/facebookOutboxextractor/" + fileName);
-            File file = new File(path + "/" + fileName);
+            File file = new File(path + "/FacebookExtractor/" + fileName);
+//            File file = new File(path + "/" + fileName);
             FileOutputStream fout = new FileOutputStream(file);
             fout.write(data.getBytes());
             fout.close();

@@ -10,6 +10,8 @@ android {
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
+        // Enabling multidex support.
+        multiDexEnabled true
     }
 
     dexOptions {
@@ -29,8 +31,11 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:22.0.0'
     compile 'com.facebook.android:facebook-android-sdk:4.1.0'
-    compile files('libs/javax.mail.jar')
+    compile 'com.android.support:multidex:1.0.0'
     compile files('libs/guava-18.0.jar')
     compile files('libs/lingpipe-4.1.0.jar')
     compile files('libs/OntologyV12.jar')
+    compile files('libs/activation.jar')
+    compile files('libs/additionnal.jar')
+    compile files('libs/mail.jar')
 }
