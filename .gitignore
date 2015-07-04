@@ -45,3 +45,6 @@ Personal_Keyboard_SQLite/libs/OntologyV8.jar
 Personal_Keyboard_SQLite/libs/OntologyV7.jar
 Personal_Keyboard_SQLite/libs/OntologyV6.jar
 Personal_Keyboard_SQLite/.idea/libraries/OntologyV7.xml
+PersonalCorpusExtractor/st.dot
+PersonalCorpusExtractor/complex2gram.txt
+PersonalCorpusExtractor/app/simple.txt
